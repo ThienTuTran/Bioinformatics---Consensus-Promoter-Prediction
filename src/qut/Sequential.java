@@ -125,6 +125,9 @@ public class Sequential
 
     public static void main(String[] args) throws FileNotFoundException, IOException
     {
-        run("../referenceGenes.list", "../Ecoli");
+        long startTime = System.currentTimeMillis();
+        run("./referenceGenes.list", "./Ecoli");
+        long durations = System.currentTimeMillis() - startTime;
+        System.out.println("\nExecution time: " + durations/1000 + "s");
     }
 }
