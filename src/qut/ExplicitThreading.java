@@ -13,12 +13,12 @@ class MyRunnable implements Runnable
     private static Series sigma70_pattern = Sigma70Definition.getSeriesAll_Unanchored(0.7);
     private static final Matrix BLOSUM_62 = BLOSUM62.Load();
     private static byte[] complement = new byte['z'];
-    private final String gbkFile;
+    private final String genBankFile;
     private static String referenceFile;
     static ReentrantLock lock = new ReentrantLock();
 
-    public MyRunnable(String gbkFile, String referenceFile) {
-        this.gbkFile = gbkFile;
+    public MyRunnable(String genBankFile, String referenceFile) {
+        this.genBankFile = genBankFile;
         this.referenceFile = referenceFile;
     }
 
@@ -92,12 +92,12 @@ class MyRunnable implements Runnable
 
         try {
             referenceGenes = ParseReferenceGenes(referenceFile);
-            record = Parse(gbkFile);
+            record = Parse(genBankFile);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        System.out.println(gbkFile);
+        System.out.println(genBankFile);
 
         for (Gene referenceGene : referenceGenes) {
             System.out.println(referenceGene.name);
@@ -142,7 +142,7 @@ class ExplicitThreading {
         List<Thread> threads = new ArrayList<>();
         List<String> listGenBankFiles = ListGenbankFiles("./Ecoli");
 
-        //create and start 4 threads for 4 files
+        // create and start 4 threads for 4 files
         for (int i = 0; i < listGenBankFiles.size(); i++) {
             String gbkFile = listGenBankFiles.get(i);
             Thread thread = new Thread(new MyRunnable(gbkFile, "./referenceGenes.list"));
