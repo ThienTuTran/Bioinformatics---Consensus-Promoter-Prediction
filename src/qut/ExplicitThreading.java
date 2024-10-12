@@ -142,7 +142,7 @@ class ExplicitThreading {
         List<Thread> threads = new ArrayList<>();
         List<String> listGenBankFiles = ListGenbankFiles("./Ecoli");
 
-        // create and start 4 threads for 4 files
+        // Create and start 4 threads for 4 files
         for (int i = 0; i < listGenBankFiles.size(); i++) {
             String gbkFile = listGenBankFiles.get(i);
             Thread thread = new Thread(new MyRunnable(gbkFile, "./referenceGenes.list"));
@@ -151,7 +151,7 @@ class ExplicitThreading {
             thread.start();
         }
 
-        //wait for all threads to complete
+        // Wait for all threads to complete
         for (Thread thread : threads)  thread.join();
 
         long timeLapsed = System.currentTimeMillis() - startTime;
