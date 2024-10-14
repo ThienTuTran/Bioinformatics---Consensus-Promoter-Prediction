@@ -160,4 +160,7 @@ public class ExecutorService {
         long timeLapsed = System.currentTimeMillis() - startTime;
         System.out.println("\nTime: " + timeLapsed/1000.0 + "s");
     }
+    public static HashMap<String, Sigma70Consensus> getConsensus() {
+        return consensus;
+    }
 }
