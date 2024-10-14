@@ -155,7 +155,7 @@ class ExplicitThreading {
         for (Thread thread : threads)  thread.join();
 
         long timeLapsed = System.currentTimeMillis() - startTime;
-        System.out.println("\nTime: " + timeLapsed/1000 + " s");
+        System.out.println("\nTime: " + timeLapsed/1000.00 + " s");
     }
 }
 

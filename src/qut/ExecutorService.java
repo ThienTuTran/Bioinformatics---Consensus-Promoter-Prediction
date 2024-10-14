@@ -123,17 +123,15 @@ public class ExecutorService {
         System.out.println("Number of Threads: " + threadNum);
 
         List<Gene> referenceGenes = ParseReferenceGenes(referenceFile);
-        List<String> genBankFiles = ListGenbankFiles(dir);
 
         // List to store future tasks
         List<Future<?>> futureTasks = new ArrayList<>();
 
-        // Iterate over reference genes and files to submit tasks
-        for (Gene referenceGene : referenceGenes) {
-            System.out.println(referenceGene.name);
-            for (String filename : genBankFiles) {
-                System.out.println(filename);
-                GenbankRecord record = Parse(filename);
+        for (String filename : ListGenbankFiles(dir)) {
+            System.out.println(filename);
+            GenbankRecord record = Parse(filename);
+            for (Gene referenceGene : referenceGenes) {
+                System.out.println(referenceGene.name);
 
                 // For each gene in the record, submit a task to the executor
                 for (Gene gene : record.genes) {
@@ -160,6 +158,6 @@ public class ExecutorService {
         long startTime = System.currentTimeMillis();
         new ExecutorService().run("./referenceGenes.list", "./Ecoli", 16);
         long timeLapsed = System.currentTimeMillis() - startTime;
-        System.out.println("\nTime: " + timeLapsed/1000 + "s");
+        System.out.println("\nTime: " + timeLapsed/1000.00 + "s");
     }
 }

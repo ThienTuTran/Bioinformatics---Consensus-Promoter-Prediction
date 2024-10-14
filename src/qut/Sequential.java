@@ -125,6 +125,6 @@ public class Sequential
         long startTime = System.currentTimeMillis();
         run("./referenceGenes.list", "./Ecoli");
         long timeLapsed = System.currentTimeMillis() - startTime;
-        System.out.println("\nTime: " + timeLapsed/1000 + "s");
+        System.out.println("\nTime: " + timeLapsed/1000.00 + "s");
     }
 }

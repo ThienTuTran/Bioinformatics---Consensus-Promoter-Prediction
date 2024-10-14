@@ -117,7 +117,6 @@ public class ParallelStream {
                         if (Homologous(gene.sequence, referenceGene.sequence)) {
                             NucleotideSequence upStreamRegion = GetUpstreamRegion(record.nucleotides, gene);
                             Match prediction = PredictPromoter(upStreamRegion);
-
                             if (prediction != null) {
                                 addConsensus(referenceGene.name, prediction);
                             }
@@ -132,11 +131,45 @@ public class ParallelStream {
             System.out.println(entry.getKey() + " " + entry.getValue());
     }
 
+    public void runWithPrep(String referenceFile, String dir, int threadNum) throws IOException {
+        // Preparing Data and store in List<TaskHandler>
+        List<TaskHandler> taskHandlers = new ArrayList<>();
+        List<Gene> referenceGenes = ParseReferenceGenes(referenceFile);
+        for (String filename : ListGenbankFiles(dir)) {
+            System.out.println(filename);
+            GenbankRecord record = Parse(filename);
+            for (Gene referenceGene : referenceGenes) {
+                System.out.println(referenceGene.name);
+                for (Gene gene : record.genes) {
+                    taskHandlers.add(new TaskHandler(referenceGene, gene, record));
+                }
+            }
+        }
+        System.out.println("parallelStream - Preparing data finished!\nComputing...\n");
+
+        // Initialize Threads with ParallelStream() and compute
+        // System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(Runtime.getRuntime().availableProcessors()));
+        System.out.println("Now run on " + threadNum + " threads.");
+        System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(threadNum));
+        taskHandlers.parallelStream()
+                .filter(task -> Homologous(task.getGene().sequence, task.getReferenceGene().sequence))
+                .forEach(task -> {
+                    NucleotideSequence upStreamRegion = GetUpstreamRegion(task.getRecord().nucleotides, task.getGene());
+                    Match prediction = PredictPromoter(upStreamRegion);
+                    if (prediction != null) {
+                        addConsensus(task.getReferenceGene().name, prediction);
+                    }
+                });
+
+        for (Map.Entry<String, Sigma70Consensus> entry : consensus.entrySet())
+            System.out.println(entry.getKey() + " " + entry.getValue());
+    }
+
     public static void main(String[] args) throws IOException{
         long startTime = System.currentTimeMillis();
         //new ParallelStream().run3rd("./referenceGenes.list", "./Ecoli", 16);
-        new ParallelStream().run3rd("./referenceGenes.list", "./Ecoli", 16);
+        new ParallelStream().runWithPrep("./referenceGenes.list", "./Ecoli", 16);
         long timeLapsed = System.currentTimeMillis() - startTime;
-        System.out.println("\nTime: " + timeLapsed/1000 + "s");
+        System.out.println("\nTime: " + timeLapsed/1000.00 + "s");
     }
 }
