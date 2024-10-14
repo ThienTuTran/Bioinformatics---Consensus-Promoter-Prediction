@@ -104,10 +104,10 @@ public class ParallelStream {
         System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism",Integer.toString(threadNum));
         List<Gene> referenceGenes = ParseReferenceGenes(referenceFile);
 
-        for( Gene referenceGene :referenceGenes) {
-            System.out.println(referenceGene.name);
-            for (String filename : ListGenbankFiles(dir)) {
-                System.out.println(filename);
+        for (String filename : ListGenbankFiles(dir)) {
+            System.out.println(filename);
+            for (Gene referenceGene :referenceGenes) {
+                System.out.println(referenceGene.name);
                 // Parse the GenBank file
                 try {
                     GenbankRecord record = Parse(filename);
@@ -170,6 +170,6 @@ public class ParallelStream {
         //new ParallelStream().run3rd("./referenceGenes.list", "./Ecoli", 16);
         new ParallelStream().runWithPrep("./referenceGenes.list", "./Ecoli", 16);
         long timeLapsed = System.currentTimeMillis() - startTime;
-        System.out.println("\nTime: " + timeLapsed/1000.00 + "s");
+        System.out.println("\nTime: " + timeLapsed/1000.0 + "s");
     }
 }

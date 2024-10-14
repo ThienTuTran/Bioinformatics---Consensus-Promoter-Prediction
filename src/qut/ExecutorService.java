@@ -158,6 +158,6 @@ public class ExecutorService {
         long startTime = System.currentTimeMillis();
         new ExecutorService().run("./referenceGenes.list", "./Ecoli", 16);
         long timeLapsed = System.currentTimeMillis() - startTime;
-        System.out.println("\nTime: " + timeLapsed/1000.00 + "s");
+        System.out.println("\nTime: " + timeLapsed/1000.0 + "s");
     }
 }
