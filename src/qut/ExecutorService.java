@@ -154,7 +154,7 @@ public class ExecutorService {
         }
     }
 
-    public static void main(String[] args) throws FileNotFoundException, IOException, ExecutionException, InterruptedException {
+    public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
         long startTime = System.currentTimeMillis();
         new ExecutorService().run("./referenceGenes.list", "./Ecoli", 16);
         long timeLapsed = System.currentTimeMillis() - startTime;
