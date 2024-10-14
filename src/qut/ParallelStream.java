@@ -5,11 +5,8 @@ import jaligner.matrix.*;
 import edu.au.jacobi.pattern.*;
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
-public class ExecutorService {
+public class ParallelStream {
     private static HashMap<String, Sigma70Consensus> consensus = new HashMap<String, Sigma70Consensus>();
     private static final ThreadLocal<Series> sigma70_pattern =
             ThreadLocal.withInitial(() -> Sigma70Definition.getSeriesAll_Unanchored(0.7));
@@ -95,70 +92,50 @@ public class ExecutorService {
         return record;
     }
 
-    public class RunnableTask implements Runnable {
-        private final Gene referenceGene;
-        private final Gene gene;
-        private final GenbankRecord record;
-
-        public RunnableTask(Gene referenceGene, Gene gene, GenbankRecord record) {
-            this.referenceGene = referenceGene;
-            this.gene = gene;
-            this.record = record;
-        }
-        @Override
-        public void run() {
-            if (Homologous(gene.sequence, referenceGene.sequence)) {
-                NucleotideSequence upStreamRegion = GetUpstreamRegion(record.nucleotides, gene);
-                Match prediction = PredictPromoter(upStreamRegion);
-                if (prediction != null) {
-                    consensus.get(referenceGene.name).addMatch(prediction);
-                    consensus.get("all").addMatch(prediction);
-                }
-            }
-        }
+    // added
+    public synchronized void addConsensus(String name, Match prediction) {
+        consensus.get(name).addMatch(prediction);
+        consensus.get("all").addMatch(prediction);
     }
-    public void run(String referenceFile, String dir, int threadNum) throws FileNotFoundException, IOException, ExecutionException, InterruptedException {
-        // Create a fixed thread pool based on the provided thread number
-        java.util.concurrent.ExecutorService executorService = Executors.newFixedThreadPool(threadNum);
+
+    public void run3rd(String referenceFile, String dir, int threadNum) throws IOException
+    {
         System.out.println("Number of Threads: " + threadNum);
-
+        System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism",Integer.toString(threadNum));
         List<Gene> referenceGenes = ParseReferenceGenes(referenceFile);
-        List<String> genBankFiles = ListGenbankFiles(dir);
 
-        // List to store future tasks
-        List<Future<?>> futureTasks = new ArrayList<>();
-
-        // Iterate over reference genes and files to submit tasks
-        for (Gene referenceGene : referenceGenes) {
+        for( Gene referenceGene :referenceGenes) {
             System.out.println(referenceGene.name);
-            for (String filename : genBankFiles) {
+            for (String filename : ListGenbankFiles(dir)) {
                 System.out.println(filename);
-                GenbankRecord record = Parse(filename);
+                // Parse the GenBank file
+                try {
+                    GenbankRecord record = Parse(filename);
 
-                // For each gene in the record, submit a task to the executor
-                for (Gene gene : record.genes) {
-                    Future<?> futureTask = executorService.submit(new RunnableTask(referenceGene, gene, record));
-                    futureTasks.add(futureTask);
+                    // Parallel stream to process each gene in the record
+                    record.genes.parallelStream().forEach(gene -> {
+                        if (Homologous(gene.sequence, referenceGene.sequence)) {
+                            NucleotideSequence upStreamRegion = GetUpstreamRegion(record.nucleotides, gene);
+                            Match prediction = PredictPromoter(upStreamRegion);
+
+                            if (prediction != null) {
+                                addConsensus(referenceGene.name, prediction);
+                            }
+                        }
+                    });
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         }
-        System.out.println("\nExecutorService\n...Executing...\n");
-
-        // shut down the executor service after submitting all tasks
-        executorService.shutdown();
-
-        // Wait for all tasks to complete
-        for (Future<?> futureTask : futureTasks) {
-            futureTask.get();  // Ensures that the task is completed
-        }
-        for (Map.Entry<String, Sigma70Consensus> entry : consensus.entrySet()) {
+        for (Map.Entry<String, Sigma70Consensus> entry : consensus.entrySet())
             System.out.println(entry.getKey() + " " + entry.getValue());
-        }
     }
 
-    public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
+    public static void main(String[] args) throws IOException{
         long startTime = System.currentTimeMillis();
-        new ExecutorService().run("./referenceGenes.list", "./Ecoli", 16);
+        //new ParallelStream().run3rd("./referenceGenes.list", "./Ecoli", 16);
+        new ParallelStream().run3rd("./referenceGenes.list", "./Ecoli", 16);
         long timeLapsed = System.currentTimeMillis() - startTime;
         System.out.println("\nTime: " + timeLapsed/1000 + "s");
     }
