@@ -92,33 +92,27 @@ public class ParallelStream {
         return record;
     }
 
-    // added
-    public synchronized void addConsensus(String name, Match prediction) {
-        consensus.get(name).addMatch(prediction);
-        consensus.get("all").addMatch(prediction);
-    }
-
-    public void run3rd(String referenceFile, String dir, int threadNum) throws IOException
+    public void runWithoutPre(String referenceFile, String dir, int threadNum) throws IOException
     {
         System.out.println("Number of Threads: " + threadNum);
         System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism",Integer.toString(threadNum));
         List<Gene> referenceGenes = ParseReferenceGenes(referenceFile);
-
         for (String filename : ListGenbankFiles(dir)) {
             System.out.println(filename);
             for (Gene referenceGene :referenceGenes) {
                 System.out.println(referenceGene.name);
-                // Parse the GenBank file
                 try {
                     GenbankRecord record = Parse(filename);
-
                     // Parallel stream to process each gene in the record
                     record.genes.parallelStream().forEach(gene -> {
                         if (Homologous(gene.sequence, referenceGene.sequence)) {
                             NucleotideSequence upStreamRegion = GetUpstreamRegion(record.nucleotides, gene);
                             Match prediction = PredictPromoter(upStreamRegion);
                             if (prediction != null) {
-                                addConsensus(referenceGene.name, prediction);
+                                synchronized (this) {
+                                    consensus.get(referenceGene.name).addMatch(prediction);
+                                    consensus.get("all").addMatch(prediction);
+                                }
                             }
                         }
                     });
@@ -131,9 +125,9 @@ public class ParallelStream {
             System.out.println(entry.getKey() + " " + entry.getValue());
     }
 
-    public void runWithPrep(String referenceFile, String dir, int threadNum) throws IOException {
-        // Preparing Data and store in List<TaskHandler>
-        List<TaskHandler> taskHandlers = new ArrayList<>();
+    public void runWithPre(String referenceFile, String dir, int threadNum) throws IOException {
+        // Preparing Data and store in List<ThreadTaskForPS>
+        List<ThreadTaskForPS> threadTaskForPS = new ArrayList<>();
         List<Gene> referenceGenes = ParseReferenceGenes(referenceFile);
         for (String filename : ListGenbankFiles(dir)) {
             System.out.println(filename);
@@ -141,34 +135,37 @@ public class ParallelStream {
             for (Gene referenceGene : referenceGenes) {
                 System.out.println(referenceGene.name);
                 for (Gene gene : record.genes) {
-                    taskHandlers.add(new TaskHandler(referenceGene, gene, record));
+                    threadTaskForPS.add(new ThreadTaskForPS(referenceGene, gene, record));
                 }
             }
         }
-        System.out.println("parallelStream - Preparing data finished!\nComputing...\n");
-
-        // Initialize Threads with ParallelStream() and compute
-        // System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(Runtime.getRuntime().availableProcessors()));
-        System.out.println("Now run on " + threadNum + " threads.");
+        System.out.println("\nParallelStream\n...Executing...\n");
+        System.out.println("Number of Threads: " + threadNum);
         System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(threadNum));
-        taskHandlers.parallelStream()
-                .filter(task -> Homologous(task.getGene().sequence, task.getReferenceGene().sequence))
-                .forEach(task -> {
-                    NucleotideSequence upStreamRegion = GetUpstreamRegion(task.getRecord().nucleotides, task.getGene());
-                    Match prediction = PredictPromoter(upStreamRegion);
-                    if (prediction != null) {
-                        addConsensus(task.getReferenceGene().name, prediction);
+        threadTaskForPS.parallelStream()
+            .filter(task -> Homologous(task.getGene().sequence, task.getReferenceGene().sequence))
+            .forEach(task -> {
+                NucleotideSequence upStreamRegion = GetUpstreamRegion(task.getRecord().nucleotides, task.getGene());
+                Match prediction = PredictPromoter(upStreamRegion);
+                if (prediction != null) {
+                    synchronized (this) {
+                        consensus.get(task.getReferenceGene().name).addMatch(prediction);
+                        consensus.get("all").addMatch(prediction);
                     }
-                });
-
+                }
+            });
         for (Map.Entry<String, Sigma70Consensus> entry : consensus.entrySet())
             System.out.println(entry.getKey() + " " + entry.getValue());
     }
 
     public static void main(String[] args) throws IOException{
         long startTime = System.currentTimeMillis();
-        //new ParallelStream().run3rd("./referenceGenes.list", "./Ecoli", 16);
-        new ParallelStream().runWithPrep("./referenceGenes.list", "./Ecoli", 16);
+
+        //========= Uncomment version you want to run ============
+        new ParallelStream().runWithoutPre("./referenceGenes.list", "./Ecoli", 16);
+        //new ParallelStream().runWithPre("./referenceGenes.list", "./Ecoli", 16);
+        //========================================================
+
         long timeLapsed = System.currentTimeMillis() - startTime;
         System.out.println("\nTime: " + timeLapsed/1000.0 + "s");
     }

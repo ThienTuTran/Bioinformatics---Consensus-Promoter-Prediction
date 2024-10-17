@@ -7,7 +7,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
-class MyRunnable implements Runnable
+class ThreadTaskForET implements Runnable
 {
     private static HashMap<String, Sigma70Consensus> consensus = new HashMap<String, Sigma70Consensus>();
     private static Series sigma70_pattern = Sigma70Definition.getSeriesAll_Unanchored(0.7);
@@ -17,9 +17,9 @@ class MyRunnable implements Runnable
     private static String referenceFile;
     static ReentrantLock lock = new ReentrantLock();
 
-    public MyRunnable(String genBankFile, String referenceFile) {
+    public ThreadTaskForET(String genBankFile, String referenceFile) {
         this.genBankFile = genBankFile;
-        this.referenceFile = referenceFile;
+        ThreadTaskForET.referenceFile = referenceFile;
     }
 
     static
@@ -85,21 +85,17 @@ class MyRunnable implements Runnable
         return record;
     }
 
-
     public void run()
     {
         List<Gene> referenceGenes = null;
         GenbankRecord record = null;
-
         try {
             referenceGenes = ParseReferenceGenes(referenceFile);
             record = Parse(genBankFile);
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         System.out.println(genBankFile);
-
         for (Gene referenceGene : referenceGenes) {
             System.out.println(referenceGene.name);
             for (Gene gene : record.genes) {
@@ -138,15 +134,14 @@ class ExplicitThreading {
         return list;
     }
     public static void main(String[] args) throws InterruptedException {
-
         long startTime = System.currentTimeMillis();
         List<Thread> threads = new ArrayList<>();
         List<String> listGenBankFiles = ListGenbankFiles("./Ecoli");
 
         // Create and start 4 threads for 4 files
         for (int i = 0; i < listGenBankFiles.size(); i++) {
-            String gbkFile = listGenBankFiles.get(i);
-            Thread thread = new Thread(new MyRunnable(gbkFile, "./referenceGenes.list"));
+            String genBankFile = listGenBankFiles.get(i);
+            Thread thread = new Thread(new ThreadTaskForET(genBankFile, "./referenceGenes.list"));
             thread.setName("Thread-" + (i + 1));
             threads.add(thread);
             thread.start();

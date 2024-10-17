@@ -1,16 +1,14 @@
 package qut;
 
-public class TaskHandler {
+public class ThreadTaskForPS {
     private final Gene referenceGene;
     private final Gene gene;
     private final GenbankRecord record;
-
-    public TaskHandler(Gene referenceGene, Gene gene, GenbankRecord record) {
+    public ThreadTaskForPS(Gene referenceGene, Gene gene, GenbankRecord record) {
         this.referenceGene = referenceGene;
         this.gene = gene;
         this.record = record;
     }
-
     public Gene getReferenceGene() {
         return referenceGene;
     }

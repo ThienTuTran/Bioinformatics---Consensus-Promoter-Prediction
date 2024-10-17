@@ -95,12 +95,11 @@ public class ExecutorService {
         return record;
     }
 
-    public class RunnableTask implements Runnable {
+    public static class ThreadTaskForES implements Runnable {
         private final Gene referenceGene;
         private final Gene gene;
         private final GenbankRecord record;
-
-        public RunnableTask(Gene referenceGene, Gene gene, GenbankRecord record) {
+        public ThreadTaskForES(Gene referenceGene, Gene gene, GenbankRecord record) {
             this.referenceGene = referenceGene;
             this.gene = gene;
             this.record = record;
@@ -117,7 +116,7 @@ public class ExecutorService {
             }
         }
     }
-    public void run(String referenceFile, String dir, int threadNum) throws FileNotFoundException, IOException, ExecutionException, InterruptedException {
+    public void run(String referenceFile, String dir, int threadNum) throws IOException, ExecutionException, InterruptedException {
         // Create a fixed thread pool based on the provided thread number
         java.util.concurrent.ExecutorService executorService = Executors.newFixedThreadPool(threadNum);
         System.out.println("Number of Threads: " + threadNum);
@@ -135,7 +134,7 @@ public class ExecutorService {
 
                 // For each gene in the record, submit a task to the executor
                 for (Gene gene : record.genes) {
-                    Future<?> futureTask = executorService.submit(new RunnableTask(referenceGene, gene, record));
+                    Future<?> futureTask = executorService.submit(new ThreadTaskForES(referenceGene, gene, record));
                     futureTasks.add(futureTask);
                 }
             }
@@ -147,7 +146,7 @@ public class ExecutorService {
 
         // Wait for all tasks to complete
         for (Future<?> futureTask : futureTasks) {
-            futureTask.get();  // Ensures that the task is completed
+            futureTask.get();
         }
         for (Map.Entry<String, Sigma70Consensus> entry : consensus.entrySet()) {
             System.out.println(entry.getKey() + " " + entry.getValue());
